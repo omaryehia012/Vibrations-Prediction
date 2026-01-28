@@ -89,8 +89,8 @@ st.markdown("""
 @st.cache_resource
 def load_assets():
     try:
-        model = joblib.load('models/model.h5')
-        scaler = joblib.load('models/scaler.h5')
+        model = joblib.load('Vibrations Detection\models_New\model.h5')
+        scaler = joblib.load('Vibrations Detection\models_New\scaler.h5')
         return model, scaler
     except:
         return None, None
@@ -103,23 +103,19 @@ with st.sidebar:
     st.caption("Adjust system parameters below")
     st.divider()
 
-    with st.expander("🌍 Geophysics", expanded=True):
-        dept = st.number_input('Measured Depth (m)', value=1300.0, step=1.0)
-        wob = st.number_input('Bit Load (WOB - Tons)', value=20.0, step=0.1)
+    with st.expander("🌍 Drilling Parameters", expanded=True):
+        dept = st.number_input('Measured Depth (m)', value=1300.0, step=10.0)
+        wob = st.number_input('Weight on Bit (KLB)', value=20.0, step=0.1)
         rpm = st.number_input('Rotational Speed (RPM)', value=120.0, step=1.0)
-
-    with st.expander("💧 Hydraulics", expanded=True):
         flow_in = st.number_input('Flow Rate (GPM)', value=800.0, step=10.0)
-        spp = st.number_input('Circulation Press (PSI)', value=2500.0, step=10.0)
-        mwt_in = st.number_input('Inlet Mud Weight (PPG)', value=12.0, step=0.1)
-
-    with st.expander("🌡️ Thermal & Force", expanded=False):
         torque = st.number_input('Torque (klb-ft)', value=15.0, step=0.5)
+        spp = st.number_input('Circulation Press (PSI)', value=2500.0, step=10.0)
+        rop = st.number_input('Rate of Penetration (m/hr)', value=10.0, step=0.1)
+        
+    with st.expander("💧 Mud Properties", expanded=True):
+        mwt_in = st.number_input('Inlet Mud Weight (PPG)', value=12.0, step=0.1)
         mtemp_in = st.number_input('Inlet Temp (°C)', value=45.0, step=0.5)
         mtemp_out = st.number_input('Outlet Temp (°C)', value=55.0, step=0.5)
-
-    st.divider()
-    sss_h = st.slider('Surface Shock Metric (SSS_H)', 0.0, 50.0, 5.0)
 
     st.write("")
     run_btn = st.button('🧠 EXECUTE AI ANALYSIS', use_container_width=True)
@@ -146,10 +142,11 @@ if not run_btn:
     """, unsafe_allow_html=True)
 else:
     # Prepare Data
+    # Inputs = ['Depth', 'WOB', 'RPM', 'Q', 'T', 'SPP', 'ROP', 'M. Wt', 'M. T. in', 'M. T. out']
     input_data = pd.DataFrame([{
-        'DEPT': dept, 'WOB': wob, 'RPM': rpm, 'Flow in': flow_in,
-        'Torque': torque, 'SPP': spp, 'M.Wt in': mwt_in,
-        'M.Temp in': mtemp_in, 'M.Temp out': mtemp_out, 'SSS_H': sss_h
+        'Depth': dept, 'WOB': wob, 'RPM': rpm, 'Q': flow_in,
+        'T': torque, 'SPP': spp, 'ROP': rop, 'M. Wt': mwt_in,
+        'M. T. in': mtemp_in, 'M. T. out': mtemp_out
     }])
 
     # Intelligence Simulation
@@ -164,7 +161,7 @@ else:
     res1, res2, res3 = st.columns(3)
     
     metrics = [
-        {"name": "STICK-SLIP SEVERITY (SSL_H)", "val": preds[0], "thresh": 8.0, "unit": "Index"},
+        {"name": "STICK-SLIP SEVERITY (SSS_H)", "val": preds[0], "thresh": 8.0, "unit": "Index"},
         {"name": "LATERAL VIBRATION (VIBXYH)", "val": preds[1], "thresh": 12.0, "unit": "g-RMS"},
         {"name": "AXIAL SHOCK (VIBZH)", "val": preds[2], "thresh": 6.0, "unit": "g-Peak"}
     ]
@@ -191,17 +188,17 @@ else:
         
         has_issue = False
         # Stick-Slip Logic
-        if preds[0] > 8.0:
+        if preds[0] > 80.0:
             st.warning("⚠️ **Stick-Slip Detected:** Prediction indicates non-uniform rotation. **ACTION:** Increase RPM by 15% or decrease WOB to break the torque-cycle.")
             has_issue = True
         
         # Lateral Logic
-        if preds[1] > 12.0:
+        if preds[1] > 3.0:
             st.error("🔥 **Lateral Whirl Alert:** High energy lateral vibration. **ACTION:** Critical RPM range approaching. Drop RPM by 20 units and check for stabilizing flow rate.")
             has_issue = True
 
         # Axial Logic
-        if preds[2] > 6.0:
+        if preds[2] > 1.0:
             st.info("⚡ **Bit Bounce Noted:** Vertical acceleration is peaks. **ACTION:** Reduce WOB slightly or increase pump pressure to stiffen the string.")
             has_issue = True
 
@@ -221,15 +218,6 @@ else:
         st.progress(min(avg_risk/2.0, 1.0))
         st.caption("Aggregated risk score based on tool-face stability and shock endurance.")
         st.markdown("</div>", unsafe_allow_html=True)
-
-    # --- Intelligence Analytics ---
-    st.markdown("### 📈 SENSITIVITY MAPPING")
-    chart_data = pd.DataFrame(
-        np.random.randn(20, 3) * 0.5 + preds,
-        columns=['Stick-Slip', 'Lateral', 'Axial']
-    )
-    st.area_chart(chart_data)
-    st.caption("Forecasted vibration variance over next 100 meters (simulated probability)")
 
 
 st.sidebar.markdown("---")
