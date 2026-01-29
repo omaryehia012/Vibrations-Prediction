@@ -89,8 +89,8 @@ st.markdown("""
 @st.cache_resource
 def load_assets():
     try:
-        model = joblib.load('models_New\model.h5')
-        scaler = joblib.load('models_New\scaler.h5')
+        model = joblib.load('models_New/model.h5')
+        scaler = joblib.load('models_New/scaler.h5')
         return model, scaler
     except:
         return None, None
@@ -223,4 +223,5 @@ else:
 st.sidebar.markdown("---")
 st.sidebar.caption("System: ANTIGRAVITY ENGINE V2.0")
 st.sidebar.caption("Last Sync: " + time.strftime("%H:%M:%S"))
+
 
